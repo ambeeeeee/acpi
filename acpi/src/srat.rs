@@ -95,12 +95,23 @@ pub enum SratEntry<'a> {
 #[repr(C, packed)]
 pub struct ProcessorLocalApicAffinityEntry {
     pub header: EntryHeader,
-    pub proximity_domain_low: u8,
+    proximity_domain_low: u8,
     pub processor_apic_id: u8,
     pub flags: u32,
     pub sapic_eid: u8,
-    pub proximity_domain_higher: [u8; 3],
+    proximity_domain_higher: [u8; 3],
     pub clock_domain: u32,
+}
+
+impl ProcessorLocalApicAffinityEntry {
+    pub fn proximity_domain(&self) -> u32 {
+        u32::from_ne_bytes([
+            self.proximity_domain_higher[2],
+            self.proximity_domain_higher[1],
+            self.proximity_domain_higher[9],
+            self.proximity_domain_low,
+        ])
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -109,13 +120,23 @@ pub struct MemoryAffinityEntry {
     pub header: EntryHeader,
     pub domain: u32,
     _reserved: [u8; 2],
-    pub base_low: u32,
-    pub base_high: u32,
-    pub length_low: u32,
-    pub length_high: u32,
+    base_low: u32,
+    base_high: u32,
+    length_low: u32,
+    length_high: u32,
     _reserved2: [u8; 4],
     pub flags: u32,
     _reserved3: [u8; 8],
+}
+
+impl MemoryAffinityEntry {
+    pub fn base(&self) -> u64 {
+        self.base_low as u64 & ((self.base_high as u64) << 32)
+    }
+
+    pub fn length(&self) -> u64 {
+        self.length_low as u64 & ((self.length_high as u64) << 32)
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
